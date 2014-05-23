@@ -21,11 +21,8 @@ void *worker(void *data)
 {
     unsigned int i;
     struct msg *msg;
-    int fd = *(int*)data;
-    free(data);
+    int fd = (int)(long)data;
     
-    printf("worker %d\n", fd);
-
     for(i=0; i<MSGCOUNT; i++) {
         msg = malloc(sizeof(struct msg));
         if (msg == NULL) {
@@ -44,16 +41,13 @@ void *worker(void *data)
 int start_worker()
 {
     pthread_t thread;
-    int pair[2], *data;
+    int pair[2];
 
     if (socketpair(PF_LOCAL, SOCK_STREAM, 0, pair)) {
         return -1;
     }
 
-    data = malloc(sizeof(int));
-    *data = pair[0];
-
-    pthread_create(&thread, NULL, worker, data);
+    pthread_create(&thread, NULL, worker, (void*)(long)pair[0]);
     return pair[1];
 }
 
@@ -66,7 +60,6 @@ void consume_worker_data(int nthreads, int *fds)
     
 
     while(1) {
-        /* init set */
         FD_ZERO(&bset);
         maxfd = -1;
         for(i=0; i<nthreads; i++) {
